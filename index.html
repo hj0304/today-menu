@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>멀티캠퍼스 역삼 오늘의 메뉴</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="멀티캠퍼스(역삼) 20층 구내식당 · 10층 공존 주간 식단표">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F7F1E4; --paper:#FFFDF8; --ink:#2C2620; --ink-soft:#6B5F52;
+    --forest:#2F4A3D; --forest-dark:#1E332A; --terracotta:#C1622D;
+    --terracotta-dark:#8E4520; --gold:#D9A441; --line:#E4D9C3; --line-strong:#CBB98F;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:'Noto Sans KR',sans-serif;padding:32px 16px 64px;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  header.hero{position:relative;background:var(--forest);border-radius:20px;
+    padding:40px 44px;color:#F7F1E4;overflow:hidden;margin-bottom:22px;}
+  header.hero::before{content:"";position:absolute;right:-40px;top:-40px;width:220px;
+    height:220px;border-radius:50%;background:rgba(217,164,65,0.14);}
+  header.hero::after{content:"";position:absolute;left:-60px;bottom:-70px;width:180px;
+    height:180px;border-radius:50%;background:rgba(193,98,45,0.18);}
+  .eyebrow{font-size:13px;letter-spacing:0.16em;color:var(--gold);font-weight:700;
+    margin:0 0 10px;position:relative;}
+  h1{font-family:'Noto Serif KR',serif;font-weight:700;font-size:34px;margin:0 0 8px;
+    position:relative;line-height:1.35;}
+  .hero-sub{font-size:14px;color:#D9D2BF;margin:0;position:relative;line-height:1.7;}
+  .hero-meta{display:flex;gap:24px;margin-top:20px;flex-wrap:wrap;position:relative;}
+  .hero-meta span{font-size:12.5px;color:#EFE8D5;background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.16);border-radius:999px;padding:6px 14px;}
+  .hero-meta b{color:var(--gold);font-weight:700;}
+  .weekbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+  .weekbar .lbl{font-size:12px;color:var(--ink-soft);font-weight:700;margin-right:2px;}
+  .weekbtn{background:var(--paper);border:1px solid var(--line);border-radius:999px;
+    padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink-soft);
+    transition:all .15s ease;font-family:inherit;}
+  .weekbtn:hover{border-color:var(--line-strong);}
+  .weekbtn.active{background:var(--terracotta);border-color:var(--terracotta);color:#fff;font-weight:700;}
+  .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:22px;}
+  .tab{background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:12px 8px 10px;text-align:center;cursor:pointer;transition:all .15s ease;user-select:none;}
+  .tab:hover{border-color:var(--line-strong);}
+  .tab .dow{font-family:'Noto Serif KR',serif;font-weight:700;font-size:15px;color:var(--ink);}
+  .tab .ddate{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .tab.active{background:var(--forest);border-color:var(--forest);}
+  .tab.active .dow{color:#F7F1E4;}
+  .tab.active .ddate{color:#B9CBBE;}
+  .tab.is-today::after{content:"오늘";display:block;font-size:9.5px;color:var(--terracotta);
+    font-weight:700;margin-top:3px;letter-spacing:.04em;}
+  .tab.active.is-today::after{color:var(--gold);}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media (max-width:760px){.cols{grid-template-columns:1fr;}h1{font-size:26px;}header.hero{padding:30px 24px;}}
+  .building{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:22px 22px 24px;}
+  .building-head{display:flex;align-items:baseline;justify-content:space-between;
+    border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:16px;}
+  .building-head h2{font-family:'Noto Serif KR',serif;font-size:18px;font-weight:700;margin:0;color:var(--ink);}
+  .building-head .tag{font-size:11px;color:var(--terracotta-dark);font-weight:700;
+    background:#FBE9DB;border-radius:999px;padding:3px 10px;}
+  .section{margin-bottom:16px;}
+  .section:last-child{margin-bottom:0;}
+  .section-title{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;
+    color:var(--terracotta-dark);margin-bottom:8px;letter-spacing:.02em;}
+  .section-title::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--terracotta);display:inline-block;}
+  .menu-main{font-size:14.5px;font-weight:700;color:var(--ink);margin:0 0 6px;line-height:1.5;}
+  .menu-sub{font-size:12.5px;color:var(--ink-soft);line-height:1.9;}
+  .menu-sub .item{display:block;}
+  .drink{display:inline-block;margin-top:8px;font-size:11.5px;color:var(--forest-dark);
+    background:#EAF0EA;border-radius:8px;padding:3px 9px;}
+  .divider{height:1px;background:var(--line);margin:14px 0;}
+  .no-service{text-align:center;padding:36px 10px;color:var(--ink-soft);}
+  .no-service .big{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--terracotta-dark);
+    font-weight:700;margin-bottom:6px;}
+  .special-badge{display:inline-block;font-size:11px;font-weight:700;color:#fff;
+    background:var(--terracotta);border-radius:999px;padding:3px 11px;margin-bottom:9px;}
+  .brunch-item,.salad-item{font-size:13px;line-height:1.8;color:var(--ink);}
+  .foot-note{margin-top:30px;background:var(--paper);border:1px solid var(--line);
+    border-radius:14px;padding:18px 22px;font-size:11.5px;color:var(--ink-soft);line-height:1.9;}
+  .foot-note b{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="eyebrow">MULTICAMPUS 역삼 · WEEKLY LUNCH</p>
+    <h1>오늘 점심, 뭐 먹지?</h1>
+    <p class="hero-sub">20층 구내식당과 10층 공존 카페테리아 메뉴를 한 장으로 모았습니다.</p>
+    <div class="hero-meta">
+      <span>운영일 <b>월~금</b></span>
+      <span>중식시간 <b>11:10 – 13:00</b></span>
+      <span id="rangePill">기간 <b>—</b></span>
+    </div>
+  </header>
+  <div class="weekbar" id="weekbar"><span class="lbl">주차 선택</span></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="panels"></div>
+  <div class="foot-note">
+    <b>안내.</b> 공존 메뉴는 한정 수량으로 제공되어 조기 품절될 수 있습니다. 상기 메뉴 및 원산지는 식자재 수급 상황에 따라 변경될 수 있으며, 당일 현장 안내를 참고해 주세요. 특정 식품 알러지가 있는 분은 20층 식당 사무실(02-3429-5959)로 문의 바랍니다.
+  </div>
+</div>
+<script>
+const TODAY=new Date();
+const todayISO=TODAY.getFullYear()+'-'+String(TODAY.getMonth()+1).padStart(2,'0')+'-'+String(TODAY.getDate()).padStart(2,'0');
+const WEEKS=[
+  {label:"7월 2주차",range:"2026.07.06 – 07.10",days:[
+    {date:"2026-07-06",dow:"월",ddate:"07.06",
+     f20:{hansik:{main:"사골우거지탕",sub:["흑미밥/잡밥","돼지고기땅콩강정","짜리고추멸치볶음","열무생채","건파래볶음 · 김치"],drink:"유자차"},
+          ilpum:{main:"왕새우튀김우동",sub:["오복지양념밥","돼지고기땅콩강정","코울슬로","무말랭이고추잎무침","김치"],drink:"유자차"}},f10:null},
+    {date:"2026-07-07",dow:"화",ddate:"07.07",
+     f20:{hansik:{main:"돼지고기고추장볶음",sub:["차조밥/잡밥","미역국","잡채","콩나물무침","김치"],drink:"수정과"},
+          ilpum:{main:"미트소스스파게티",sub:["마늘바게트","감자튀김","케이준샐러드&드레싱","피클"],drink:"수정과 · 제로탄산"}},
+     f10:{lunchbox:["김치제육","떡갈비데리야끼볶음","북어해장국","백미밥","피쉬소스숙주볶음","깍두기"],
+          brunch:["게살샌드위치","메밀면샐러드","키위드레싱","음료"],salad:["매콤제육보울","키위드레싱","음료"]}},
+    {date:"2026-07-08",dow:"수",ddate:"07.08",
+     f20:{hansik:{main:"삼계떡만둣국",sub:["보리밥/쌀밥","오징어감치전","죽순어묵볶음/상추겉절이","깍두기"],drink:"매실차"},
+          ilpum:{main:"돼지고기카레라이스",sub:["미소장국","쫄면겉절이","죽순어묵볶음","상추겉절이","단무지"],drink:"매실차"}},
+     f10:{lunchbox:["수제돈까스","푸 풍커리","크림스프","백미밥","케요네즈샐러드","포기김치"],
+          brunch:["감자샌드위치","돈까스샐러드","사우전아일랜드드레싱","음료"],salad:["흑임자닭가슴살파스타","사우전아일랜드드레싱","음료"]}},
+    {date:"2026-07-09",dow:"목",ddate:"07.09",
+     f20:{hansik:{main:"놀부부대찌개",sub:["흑미잡밥/잡밥","부추전/매운감자조림","샐러드&드레싱","깍두기"],drink:"복분자홍차"},
+          ilpum:{main:"비빔밥&호라이",sub:["근대된장국","채소코로켓","도토리묵&양념장","매운감자조림","김치"],drink:"복분자홍차"}},
+     f10:{lunchbox:["영콘버섯소불고기","매콤떡볶이","사골옹심미역국","수수밥","미역초무침","포기김치"],
+          brunch:["핫치킨샌드위치","병아리콩샐러드","발사믹드레싱","음료"],salad:["훈제오리고구마무스샐러드","발사믹드레싱","음료"]}},
+    {date:"2026-07-10",dow:"금",ddate:"07.10",
+     f20:{hansik:{main:"나주곰탕",sub:["수수밥/잡밥","완자전","건새우마늘종볶음","오이양파무침/깍두기"],drink:"아이스티(복숭아맛)"},
+          ilpum:{main:"간자장면",sub:["미니수수밥","계란맛국","후르츠탕수육","계맛살계자냉채","짜사이채무침"],drink:"아이스티(복숭아맛)"}},
+     f10:{lunchbox:["단호박찜닭","비엔나소시지볶음","김치순두부찌개","백미밥","콩나물무침","깍두기"],
+          brunch:["돈까스샌드위치","알리오올리오샐러드","무지방샌사텐드레싱","음료"],salad:["치킨텐더바게트샐러드","무지방샌사드레싱","음료"]}}
+  ]},
+  {label:"7월 3주차",range:"2026.07.13 – 07.17",days:[
+    {date:"2026-07-13",dow:"월",ddate:"07.13",
+     f20:{hansik:{main:"밀양돼지국밥 (새우젓&다대기)",sub:["수수밥/쌀밥","장떡/청포묵무침","양배추샐러드&사우전드레싱","깍두기"],drink:"석류차"},
+          ilpum:{main:"김치나베돈가스",sub:["수수밥/쌀밥","가다랑어국","콘버터구이","양배추샐러드&사우전드레싱","깍두기"],drink:"석류차"}},
+     f10:{lunchbox:["사천식가지불고기","야채계란찜","시래기된장국","백미밥","연근조림","포기김치"],
+          brunch:["단호박샌드위치","훈제오리샐러드","파인애플드레싱","음료"],salad:["떡갈비파스타샐러드","파인애플드레싱","음료"]}},
+    {date:"2026-07-14",dow:"화",ddate:"07.14",
+     f20:{hansik:{main:"이차돌 된장찌개",sub:["보리밥/쌀밥","언양식바싹불고기","느타리버섯꽈리고추볶음","부추적채겉절이","김구이/김치"],drink:"매실차"},
+          ilpum:{main:"케첩오므라이스",sub:["일식장국","미니떡볶이","단호박샐러드","부추적채겉절이","피클"],drink:"매실차"}},
+     f10:{lunchbox:["훈제오리","미트볼조림","매운어묵국","백미밥","해초샐러드","포기김치"],
+          brunch:["햄치즈샌드위치","리코타치즈샐러드","크리미양파드레싱","음료"],salad:["목살스테이크보울","크리미양파드레싱","음료"]}},
+    {date:"2026-07-15",dow:"수",ddate:"07.15",
+     f20:{special:{label:"초복 특선",main:"한방닭다리백숙",sub:["흑미찹쌀밥","호박채치자전","조랭이떡옥수수샐러드","미역초무침/깍두기"],drink:"수박 / 복분자차"}},
+     f10:{lunchbox:null,brunch:["에그마요샌드위치","돈까스샐러드","샤인머스캣드레싱","음료"],salad:["참치카나페샐러드","샤인머스캣드레싱","음료"]}},
+    {date:"2026-07-16",dow:"목",ddate:"07.16",
+     f20:{hansik:{main:"김치날치알밥",sub:["가다랑어국","생선커틀릿&타르타르","통감자버터구이","샐러드&드레싱","단무지무침"],drink:"아이스티(레몬)"},
+          ilpum:{main:"가락국수",sub:["후리가케양념밥","순대볶음","통감자버터구이","샐러드&드레싱","단무지무침"],drink:"아이스티(레몬)"}},
+     f10:{lunchbox:["매콤돈사태찜","양파베네갯","냉우동","백미밥","맛살콩나물냉채","포기김치"],
+          brunch:["흑임자닭가슴살샌드위치","아보카도샐러드","케이준드레싱","음료"],salad:["치킨텐더단호박보울","케이준드레싱","음료"]}},
+    {date:"2026-07-17",dow:"금",ddate:"07.17",f20:{holiday:"제헌절"},f10:{holiday:"제헌절"}}
+  ]},
+  {label:"7월 4주차",range:"2026.07.20 – 07.24",days:[
+    {date:"2026-07-20",dow:"월",ddate:"07.20",
+     f20:{hansik:{main:"설렁탕",sub:["수수밥/쌀밥","두부고추장조림","새우젓계란찜","마카로니콘샐러드","깍두기"],drink:"유자차"},
+          ilpum:{main:"햄김치볶음밥&계란후라이",sub:["미니우동","청파래오징어가스&타르타르","마카로니콘샐러드","샐러드&드레싱","단무지"],drink:"유자차"}},
+     f10:{lunchbox:["오징어제육불고기","미니돈까스","들깨미역국","수수밥","새우젓호박볶음","포기김치"],
+          brunch:["치킨텐더샌드위치","망고샐러드","오리엔탈드레싱","음료"],salad:["간장닭조림버섯샐러드","오리엔탈드레싱","음료"]}},
+    {date:"2026-07-21",dow:"화",ddate:"07.21",
+     f20:{hansik:{main:"간장돼지불고기",sub:["흑미밥/쌀밥","도토리묵냉국","호박채치자전","미역줄기초장무침","깍두기"],drink:"수정과"},
+          ilpum:{main:"베이컨미소라멘",sub:["유부양념밥","새우감자크로켓","부추생채","샐러드&드레싱","무비트초절임"],drink:"수정과"}},
+     f10:{lunchbox:["마일드불카츠","열무보리비빔밥","배추된장국","단호박샐러드","포기김치"],
+          brunch:["햄계란샌드위치","파스타샐러드","키위드레싱","음료"],salad:["새우튀김감자무스샐러드","키위드레싱","음료"]}},
+    {date:"2026-07-22",dow:"수",ddate:"07.22",
+     f20:{special:{label:"양식 스페셜",main:"햄버그스테이크 & 미트소스스파게티",sub:["양송이스프/쌀밥&후리가케","반달감자튀김&케첩","일식양배추샐러드&드레싱","양배추피클","깍두기"],drink:"매실차"}},
+     f10:{lunchbox:["한방보쌈","비빔만두","얼갈이된장국","병아리콩밥","보쌈집무생채","포기김치"],
+          brunch:["참치샌드위치","치즈스틱샐러드","요거트애플드레싱","음료"],salad:["닭가슴살파인애플샐러드","요거트애플드레싱","음료"]}},
+    {date:"2026-07-23",dow:"목",ddate:"07.23",
+     f20:{hansik:{main:"짬뽕순두부찌개",sub:["보리밥/쌀밥","너비아니엿장조림","잡채/배추된장나물","목이버섯냉채/김치"],drink:"복분자홍초"},
+          ilpum:{main:"로제떡볶이",sub:["계란팟국","김가루양념밥","수제채소튀김","샐러드&드레싱","깍둑단무지"],drink:"복분자홍초"}},
+     f10:{lunchbox:["데리야끼삼치구이","고추잡채+꽃빵","소고기뭇국","보리밥","미역줄기맛살볶음","포기김치"],
+          brunch:["크랜베리닭가슴살샌드위치","새우샐러드","오렌지망고드레싱","음료"],salad:["훈제오리단호박샐러드","오렌지망고드레싱","음료"]}},
+    {date:"2026-07-24",dow:"금",ddate:"07.24",
+     f20:{hansik:{main:"대파육개장",sub:["혼합잡곡밥/쌀밥","해물완자전","후랑크파인애플케첩볶음","오이생채/깍두기"],drink:"아이스티(복숭아맛)"},
+          ilpum:{main:"오색초계국수",sub:["혼합잡곡밥/쌀밥","갈비만두찜","고구마샐러드","오이생채","배추겉절이"],drink:"아이스티(복숭아맛)"}},
+     f10:{lunchbox:["파채연탄불고기","두부강정","감자고추장국","흑미밥","천사채마요샐러드","포기김치"],
+          brunch:["고구마샌드위치","떡갈비샐러드","오리엔탈드레싱","음료"],salad:["치즈함박고구마샐러드","오리엔탈드레싱","음료"]}}
+  ]}
+];
+const weekbar=document.getElementById('weekbar'),tabsEl=document.getElementById('tabs'),
+  panelsEl=document.getElementById('panels'),rangePill=document.getElementById('rangePill');
+let curWeek=0,curDay=0;
+(function(){for(let w=0;w<WEEKS.length;w++)for(let d=0;d<WEEKS[w].days.length;d++)
+  if(WEEKS[w].days[d].date===todayISO){curWeek=w;curDay=d;return;}
+  curWeek=WEEKS.length-1;curDay=0;})();
+function subBlock(s){return `<div class="menu-main">${s.main}</div>
+  <div class="menu-sub">${s.sub.map(x=>`<span class="item">${x}</span>`).join('')}</div>
+  ${s.drink?`<span class="drink">${s.drink}</span>`:''}`;}
+function f20Block(f){
+  if(f.holiday)return `<div class="no-service"><div class="big">${f.holiday}</div>운영하지 않습니다.</div>`;
+  if(f.special)return `<div class="section"><span class="special-badge">${f.special.label}</span>${subBlock(f.special)}</div>`;
+  return `<div class="section"><div class="section-title">한식</div>${subBlock(f.hansik)}</div>
+    <div class="divider"></div><div class="section"><div class="section-title">일품</div>${subBlock(f.ilpum)}</div>`;}
+function f10Block(f){
+  if(!f)return `<div class="no-service"><div class="big">미운영</div>공존 카페테리아는 이 날 운영하지 않습니다.</div>`;
+  if(f.holiday)return `<div class="no-service"><div class="big">${f.holiday}</div>운영하지 않습니다.</div>`;
+  const lb=f.lunchbox===null?`<div class="brunch-item" style="color:var(--ink-soft)">이 날은 도시락 미운영</div>`
+    :`<div class="brunch-item">${f.lunchbox.join(' · ')}</div>`;
+  return `<div class="section"><div class="section-title">도시락</div>${lb}</div>
+    <div class="divider"></div><div class="section"><div class="section-title">브런치</div><div class="brunch-item">${f.brunch.join(' · ')}</div></div>
+    <div class="divider"></div><div class="section"><div class="section-title">샐러드</div><div class="salad-item">${f.salad.join(' · ')}</div></div>`;}
+function renderWeekbar(){weekbar.querySelectorAll('.weekbtn').forEach(b=>b.remove());
+  WEEKS.forEach((wk,i)=>{const b=document.createElement('button');
+    b.className='weekbtn'+(i===curWeek?' active':'');b.textContent=wk.label;
+    b.onclick=()=>{curWeek=i;curDay=0;renderAll();};weekbar.appendChild(b);});}
+function renderTabs(){tabsEl.innerHTML='';
+  WEEKS[curWeek].days.forEach((d,i)=>{const t=document.createElement('div');
+    t.className='tab'+(i===curDay?' active':'')+(d.date===todayISO?' is-today':'');
+    t.innerHTML=`<div class="dow">${d.dow}</div><div class="ddate">${d.ddate}</div>`;
+    t.onclick=()=>{curDay=i;renderTabs();renderPanel();};tabsEl.appendChild(t);});}
+function renderPanel(){const d=WEEKS[curWeek].days[curDay];
+  panelsEl.innerHTML=`<div class="cols">
+    <div class="building"><div class="building-head"><h2>20층 구내식당</h2>
+      <span class="tag">${d.f20.special?d.f20.special.label:(d.f20.holiday?'휴무':'한식 · 일품')}</span></div>${f20Block(d.f20)}</div>
+    <div class="building"><div class="building-head"><h2>10층 공존</h2>
+      <span class="tag">${d.f10&&d.f10.holiday?'휴무':'한정 수량'}</span></div>${f10Block(d.f10)}</div>
+  </div>`;}
+function renderAll(){rangePill.innerHTML='기간 <b>'+WEEKS[curWeek].range+'</b>';
+  renderWeekbar();renderTabs();renderPanel();}
+renderAll();
+</script>
+</body>
+</html>
