@@ -33,13 +33,29 @@
   .hero-meta span{font-size:12.5px;color:#EFE8D5;background:rgba(255,255,255,0.08);
     border:1px solid rgba(255,255,255,0.16);border-radius:999px;padding:6px 14px;}
   .hero-meta b{color:var(--gold);font-weight:700;}
-  .weekbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
-  .weekbar .lbl{font-size:12px;color:var(--ink-soft);font-weight:700;margin-right:2px;}
-  .weekbtn{background:var(--paper);border:1px solid var(--line);border-radius:999px;
-    padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink-soft);
-    transition:all .15s ease;font-family:inherit;}
-  .weekbtn:hover{border-color:var(--line-strong);}
-  .weekbtn.active{background:var(--terracotta);border-color:var(--terracotta);color:#fff;font-weight:700;}
+  .weekpick{position:relative;margin-bottom:14px;max-width:360px;}
+  .weekpick-btn{display:flex;align-items:center;gap:10px;width:100%;background:var(--paper);
+    border:1px solid var(--line);border-radius:14px;padding:11px 14px;cursor:pointer;
+    font-family:inherit;text-align:left;transition:border-color .15s ease;}
+  .weekpick-btn:hover{border-color:var(--line-strong);}
+  .weekpick.open .weekpick-btn{border-color:var(--terracotta);}
+  .wp-lbl{flex:none;font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:.08em;
+    background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:3px 9px;}
+  .wp-cur{flex:1;font-family:'Noto Serif KR',serif;font-weight:700;font-size:15px;color:var(--ink);}
+  .wp-caret{flex:none;font-size:11px;color:var(--ink-soft);transition:transform .18s ease;}
+  .weekpick.open .wp-caret{transform:rotate(180deg);}
+  .weekpick-list{position:absolute;z-index:20;top:calc(100% + 6px);left:0;right:0;
+    background:var(--paper);border:1px solid var(--line-strong);border-radius:14px;padding:6px;
+    box-shadow:0 12px 30px rgba(44,38,32,.16);max-height:296px;overflow-y:auto;}
+  .weekpick-list[hidden]{display:none;}
+  .wp-opt{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;
+    background:none;border:0;border-radius:10px;padding:9px 11px;cursor:pointer;
+    font-family:inherit;text-align:left;color:var(--ink);}
+  .wp-opt:hover{background:var(--cream);}
+  .wp-opt .n{font-weight:700;font-size:13.5px;}
+  .wp-opt .r{font-size:11px;color:var(--ink-soft);white-space:nowrap;}
+  .wp-opt[aria-selected="true"]{background:var(--forest);color:#F7F1E4;}
+  .wp-opt[aria-selected="true"] .r{color:#B9CBBE;}
   .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:22px;}
   .tab{background:var(--paper);border:1px solid var(--line);border-radius:14px;
     padding:12px 8px 10px;text-align:center;cursor:pointer;transition:all .15s ease;user-select:none;}
@@ -96,7 +112,12 @@
       <span id="rangePill">기간 <b>—</b></span>
     </div>
   </header>
-  <div class="weekbar" id="weekbar"><span class="lbl">주차 선택</span></div>
+  <div class="weekpick" id="weekpick">
+    <button type="button" class="weekpick-btn" id="weekpickBtn" aria-expanded="false" aria-haspopup="listbox">
+      <span class="wp-lbl">주차</span><span class="wp-cur" id="wpCur">—</span><span class="wp-caret">▼</span>
+    </button>
+    <div class="weekpick-list" id="weekpickList" role="listbox" aria-label="주차 선택" hidden></div>
+  </div>
   <div class="tabs" id="tabs"></div>
   <div id="panels"></div>
   <div class="foot-note">
@@ -231,9 +252,37 @@ const WEEKS=[
           ilpum:{main:"명태회냉면",sub:["사골온육수","김가루양념밥","교자만두찜&초간장","마카로니콘샐러드/냉면김치"],drink:"아이스티(복숭아맛)"}},
      f10:{lunchbox:["매운굴소스청경채소고기볶음","챔피온소세지&치킨링","백미밥","냉우동","오이부추무침","포기김치"],
           brunch:["클럽샌드위치","푸실리샐러드","자두드레싱","음료"],salad:["불고기버섯보울","자두드레싱","음료"]}}
+  ]},
+  {label:"8월 2주차",range:"2026.08.10 – 08.14",days:[
+    {date:"2026-08-10",dow:"월",ddate:"08.10",
+     f20:{hansik:{main:"순대국밥",sub:["수수밥/쌀밥","연근땅콩강정","건새우마늘종볶음","매운콩나물무침/깍두기"],drink:"아이스티(레몬)"},
+          ilpum:{main:"새우필라프&토마토살사소스",sub:["일식장국","등심돈가스&소스","건새우마늘종볶음","샐러드&드레싱/김치"],drink:"아이스티(레몬)"}},
+     f10:{lunchbox:["육쌈불함박스테이크","매콤감자조림","백미밥","참치김치찌개","마늘종막장무침","깍두기"],
+          brunch:["단호박샌드위치","훈제오리샐러드","오렌지드레싱","음료"],salad:["목살스테이크샐러드","오렌지드레싱","음료"]}},
+    {date:"2026-08-11",dow:"화",ddate:"08.11",
+     f20:{hansik:{main:"돼지고기고추장볶음",sub:["혼합잡곡밥/쌀밥","감자수제비국","옥수수전","양배추쌈&쌈장","깍두기"],drink:"석류차"},
+          ilpum:{main:"간자장면",sub:["미니쌀밥/계란팟국","꽃빵튀김&연유","땅콩튀김","짜사이채무침/김치"],drink:"석류차"}},
+     f10:{lunchbox:["바베큐폭찹스테이크","어묵강정","기장밥","얼갈이된장국","명엽채초장볶음","포기김치"],
+          brunch:["햄계란샌드위치","리코타치즈샐러드","오렌지망고드레싱","음료"],salad:["흑임자닭가슴살단호박샐러드","오렌지망고드레싱","음료"]}},
+    {date:"2026-08-12",dow:"수",ddate:"08.12",
+     f20:{hansik:{label:"이화수",main:"전통육개장",sub:["차조밥/쌀밥","분홍소세지전&케첩","미나리무생채/샐러드&드레싱","깍두기"],drink:"매실차"},
+          ilpum:{label:"KIMHOYOON Kitchen",main:"더 이탈리안클럽 봉골레파스타",sub:["모닝롤마늘빵","으깬고구마샐러드","샐러드&드레싱/수제피클"],drink:"매실차 / 제로음료"}},
+     f10:{lunchbox:["돼지고기수육","고로케김말이","수수밥","장터국밥","보쌈무김치","백김치"],
+          brunch:["참치샌드위치","치즈스틱샐러드","오리엔탈드레싱","음료"],salad:["함박스테이크고구마샐러드","오리엔탈드레싱","음료"]}},
+    {date:"2026-08-13",dow:"목",ddate:"08.13",
+     f20:{hansik:{main:"순두부찌개",sub:["보리밥/쌀밥","생선가스&타르타르소스","후랑크소시지채소볶음","시래기된장조림","일식양배추샐러드&드레싱","깍두기"],drink:"수정과"},
+          ilpum:{main:"베이컨소유라멘",sub:["유부양념밥","생선가스&타르타르소스","일식양배추샐러드&드레싱","단무지/김치"],drink:"수정과"}},
+     f10:{lunchbox:["마파두부","고추잡채&꽃빵","백미밥","양파계란국","유자청단무지무침","포기김치"],
+          brunch:["돈까스샌드위치","알리오올리오샐러드","유자파인드레싱","음료"],salad:["로스트치킨샐러드","유자파인드레싱","음료"]}},
+    {date:"2026-08-14",dow:"금",ddate:"08.14",
+     f20:{special:{label:"말복",main:"한방닭다리백숙",sub:["흑미찹쌀밥/쌀밥","궁중떡볶이","김치전","도토리묵무침/깍두기"],drink:"수박 / 블루베리맛홍초"}},
+     f10:{lunchbox:["장어덮밥","간장돼지불고기","볶음우동","팽이미소장국","새콤달콤무생채","포기김치"],
+          brunch:["흑임자닭가슴살샌드위치","아보카도샐러드","딸기드레싱","음료"],salad:["참치마요바게트샐러드","딸기드레싱","음료"]}}
   ]}
 ];
-const weekbar=document.getElementById('weekbar'),tabsEl=document.getElementById('tabs'),
+const weekpick=document.getElementById('weekpick'),weekpickBtn=document.getElementById('weekpickBtn'),
+  weekpickList=document.getElementById('weekpickList'),wpCur=document.getElementById('wpCur'),
+  tabsEl=document.getElementById('tabs'),
   panelsEl=document.getElementById('panels'),rangePill=document.getElementById('rangePill');
 let curWeek=0,curDay=0;
 (function(){for(let w=0;w<WEEKS.length;w++)for(let d=0;d<WEEKS[w].days.length;d++)
@@ -256,10 +305,22 @@ function f10Block(f){
   return `<div class="section"><div class="section-title">도시락</div>${lb}</div>
     <div class="divider"></div><div class="section"><div class="section-title">브런치</div><div class="brunch-item">${f.brunch.join(' · ')}</div></div>
     <div class="divider"></div><div class="section"><div class="section-title">샐러드</div><div class="salad-item">${f.salad.join(' · ')}</div></div>`;}
-function renderWeekbar(){weekbar.querySelectorAll('.weekbtn').forEach(b=>b.remove());
-  WEEKS.forEach((wk,i)=>{const b=document.createElement('button');
-    b.className='weekbtn'+(i===curWeek?' active':'');b.textContent=wk.label;
-    b.onclick=()=>{curWeek=i;curDay=0;renderAll();};weekbar.appendChild(b);});}
+function closeWeekpick(){weekpick.classList.remove('open');weekpickList.hidden=true;
+  weekpickBtn.setAttribute('aria-expanded','false');}
+function openWeekpick(){weekpick.classList.add('open');weekpickList.hidden=false;
+  weekpickBtn.setAttribute('aria-expanded','true');
+  const sel=weekpickList.querySelector('[aria-selected="true"]');if(sel)sel.focus();}
+weekpickBtn.onclick=()=>{weekpickList.hidden?openWeekpick():closeWeekpick();};
+document.addEventListener('click',e=>{if(!weekpick.contains(e.target))closeWeekpick();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!weekpickList.hidden){
+  closeWeekpick();weekpickBtn.focus();}});
+function renderWeekpick(){wpCur.textContent=WEEKS[curWeek].label;weekpickList.innerHTML='';
+  WEEKS.forEach((wk,i)=>{const o=document.createElement('button');
+    o.type='button';o.className='wp-opt';o.setAttribute('role','option');
+    o.setAttribute('aria-selected',i===curWeek?'true':'false');
+    o.innerHTML=`<span class="n">${wk.label}</span><span class="r">${wk.range}</span>`;
+    o.onclick=()=>{curWeek=i;curDay=0;closeWeekpick();renderAll();weekpickBtn.focus();};
+    weekpickList.appendChild(o);});}
 function renderTabs(){tabsEl.innerHTML='';
   WEEKS[curWeek].days.forEach((d,i)=>{const t=document.createElement('div');
     t.className='tab'+(i===curDay?' active':'')+(d.date===todayISO?' is-today':'');
@@ -273,7 +334,7 @@ function renderPanel(){const d=WEEKS[curWeek].days[curDay];
       <span class="tag">${d.f10&&d.f10.holiday?'휴무':'한정 수량'}</span></div>${f10Block(d.f10)}</div>
   </div>`;}
 function renderAll(){rangePill.innerHTML='기간 <b>'+WEEKS[curWeek].range+'</b>';
-  renderWeekbar();renderTabs();renderPanel();}
+  renderWeekpick();renderTabs();renderPanel();}
 renderAll();
 </script>
 </body>
