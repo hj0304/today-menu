@@ -95,6 +95,21 @@
   .special-badge{display:inline-block;font-size:11px;font-weight:700;color:#fff;
     background:var(--terracotta);border-radius:999px;padding:3px 11px;margin-bottom:9px;}
   .brunch-item,.salad-item{font-size:13px;line-height:1.8;color:var(--ink);}
+  .reactions{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .rx{display:inline-flex;align-items:center;gap:5px;background:var(--paper);
+    border:1px solid var(--line);border-radius:999px;padding:4px 10px;cursor:pointer;
+    font-family:inherit;font-size:12px;color:var(--ink-soft);line-height:1.6;
+    transition:border-color .15s ease,background .15s ease,color .15s ease;}
+  .rx:hover:not(:disabled){border-color:var(--line-strong);}
+  .rx .e{font-size:13.5px;}
+  .rx .c{font-weight:700;color:var(--ink);min-width:9px;text-align:right;
+    font-variant-numeric:tabular-nums;}
+  .rx.on{background:#EAF0EA;border-color:var(--forest);color:var(--forest-dark);}
+  .rx.on .c{color:var(--forest-dark);}
+  .rx:disabled{opacity:.55;cursor:default;}
+  .rx-note{margin-top:8px;font-size:10.5px;color:var(--ink-soft);opacity:.9;}
+  #rxModeNote{margin:18px 0 0;text-align:center;font-size:11px;}
+  #rxModeNote[hidden]{display:none;}
   .foot-note{margin-top:30px;background:var(--paper);border:1px solid var(--line);
     border-radius:14px;padding:18px 22px;font-size:11.5px;color:var(--ink-soft);line-height:1.9;}
   .foot-note b{color:var(--ink);}
@@ -120,6 +135,7 @@
   </div>
   <div class="tabs" id="tabs"></div>
   <div id="panels"></div>
+  <p class="rx-note" id="rxModeNote" hidden></p>
   <div class="foot-note">
     <b>안내.</b> 공존 메뉴는 한정 수량으로 제공되어 조기 품절될 수 있습니다. 상기 메뉴 및 원산지는 식자재 수급 상황에 따라 변경될 수 있으며, 당일 현장 안내를 참고해 주세요. 특정 식품 알러지가 있는 분은 20층 식당 사무실(02-3429-5959)로 문의 바랍니다.
   </div>
@@ -357,6 +373,87 @@ const WEEKS=[
           brunch:["참치샌드위치","치즈스틱샐러드","오리엔탈드레싱","음료"],salad:["치즈함박고구마샐러드","오리엔탈드레싱","음료"]}}
   ]}
 ];
+/* 메뉴 반응 설정 — 자세한 내용은 README-reactions.md 참고.
+   mode:'local'    : 이 브라우저에만 저장. 남의 반응은 보이지 않음.
+   mode:'supabase' : 모두가 같은 카운트를 봄. url/anonKey를 채우고 mode를 바꾸면 전환됨.
+                     anonKey는 공개 배포용 키라 이 파일에 넣어도 됨(권한은 RLS로 제한). */
+const RX_CFG={mode:'local',url:'',anonKey:''};
+const RX_MSG={
+  loadFail:'반응을 불러오지 못했습니다. 새로고침해 주세요.',
+  saveFail:'반응 저장에 실패했습니다. 다시 눌러 주세요.',
+  localOnly:'반응은 현재 이 브라우저에만 저장됩니다. 다른 사람의 반응은 아직 보이지 않습니다.'};
+const RX_EMOJI=[{id:'good',e:'\u{1F44D}',label:'맛있어요'},
+                {id:'yum', e:'\u{1F60B}',label:'또 먹고 싶어요'},
+                {id:'meh', e:'\u{1F610}',label:'그저 그래요'}];
+function rxBar(date,floor,corner){
+  return `<div class="reactions" data-rxkey="${date}:${floor}:${corner}">`
+    +RX_EMOJI.map(m=>`<button type="button" class="rx" data-emoji="${m.id}" disabled `
+      +`aria-pressed="false" aria-label="${m.label}" title="${m.label}">`
+      +`<span class="e">${m.e}</span><span class="c">&ndash;</span></button>`).join('')
+    +`</div>`;}
+function rxVoter(){let v=null;
+  try{v=localStorage.getItem('rx-voter');}catch(e){}
+  if(!v){v=(window.crypto&&crypto.randomUUID)?crypto.randomUUID()
+      :'v'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+    try{localStorage.setItem('rx-voter',v);}catch(e){}}
+  return v;}
+const rxLocal={
+  _read(k){try{return JSON.parse(localStorage.getItem(k))||{};}catch(e){return {};}},
+  _write(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
+  async counts(keys){const all=this._read('rx-counts'),mine=this._read('rx-mine'),out={};
+    keys.forEach(k=>out[k]={counts:all[k]||{},mine:mine[k]||null});return out;},
+  async vote(key,to){const all=this._read('rx-counts'),mine=this._read('rx-mine');
+    const c=Object.assign({},all[key]),prev=mine[key]||null;
+    if(prev)c[prev]=Math.max(0,(c[prev]||0)-1);
+    if(to)c[to]=(c[to]||0)+1;
+    all[key]=c;
+    if(to)mine[key]=to;else delete mine[key];
+    this._write('rx-counts',all);this._write('rx-mine',mine);}};
+const rxSupa={
+  _h(extra){return Object.assign({apikey:RX_CFG.anonKey,Authorization:'Bearer '+RX_CFG.anonKey,
+    'Content-Type':'application/json'},extra||{});},
+  async counts(keys){
+    const list=keys.map(k=>'"'+k+'"').join(',');
+    const r=await fetch(`${RX_CFG.url}/rest/v1/menu_reactions`
+      +`?select=menu_key,emoji,voter&menu_key=in.(${list})`,{headers:this._h()});
+    if(!r.ok)throw new Error('load '+r.status);
+    const rows=await r.json(),me=rxVoter(),out={};
+    keys.forEach(k=>out[k]={counts:{},mine:null});
+    rows.forEach(row=>{const o=out[row.menu_key];if(!o)return;
+      o.counts[row.emoji]=(o.counts[row.emoji]||0)+1;
+      if(row.voter===me)o.mine=row.emoji;});
+    return out;},
+  async vote(key,to){const voter=rxVoter();
+    if(!to){const r=await fetch(`${RX_CFG.url}/rest/v1/menu_reactions`
+        +`?menu_key=eq.${encodeURIComponent(key)}&voter=eq.${encodeURIComponent(voter)}`,
+        {method:'DELETE',headers:this._h()});
+      if(!r.ok)throw new Error('delete '+r.status);return;}
+    const r=await fetch(`${RX_CFG.url}/rest/v1/menu_reactions?on_conflict=menu_key,voter`,
+      {method:'POST',headers:this._h({Prefer:'resolution=merge-duplicates'}),
+       body:JSON.stringify({menu_key:key,voter,emoji:to})});
+    if(!r.ok)throw new Error('save '+r.status);}};
+function rxShared(){return RX_CFG.mode==='supabase'&&!!RX_CFG.url&&!!RX_CFG.anonKey;}
+function rxStore(){return rxShared()?rxSupa:rxLocal;}
+function rxPaint(bar,st){
+  bar.querySelectorAll('.rx').forEach(btn=>{const id=btn.dataset.emoji,on=st.mine===id;
+    btn.disabled=false;btn.classList.toggle('on',on);
+    btn.setAttribute('aria-pressed',on?'true':'false');
+    btn.querySelector('.c').textContent=st.counts[id]||0;});
+  bar._rx=st;}
+function rxNote(bar,msg){let n=bar.nextElementSibling;
+  if(!n||!n.classList.contains('rx-note')){n=document.createElement('div');
+    n.className='rx-note';bar.parentNode.insertBefore(n,bar.nextSibling);}
+  n.textContent=msg;}
+let rxSeq=0;
+async function hydrateReactions(){
+  const bars=[].slice.call(panelsEl.querySelectorAll('.reactions'));
+  if(!bars.length)return;
+  const seq=++rxSeq,keys=bars.map(b=>b.dataset.rxkey);
+  let data;
+  try{data=await rxStore().counts(keys);}
+  catch(e){if(seq===rxSeq)bars.forEach(b=>rxNote(b,RX_MSG.loadFail));return;}
+  if(seq!==rxSeq)return;
+  bars.forEach(b=>rxPaint(b,data[b.dataset.rxkey]||{counts:{},mine:null}));}
 const weekpick=document.getElementById('weekpick'),weekpickBtn=document.getElementById('weekpickBtn'),
   weekpickList=document.getElementById('weekpickList'),wpCur=document.getElementById('wpCur'),
   tabsEl=document.getElementById('tabs'),
@@ -369,19 +466,19 @@ function brand(s){return s&&s.label?`<span class="brand">${s.label}</span>`:'';}
 function subBlock(s){return `<div class="menu-main">${s.main}</div>
   <div class="menu-sub">${s.sub.map(x=>`<span class="item">${x}</span>`).join('')}</div>
   ${s.drink?`<span class="drink">${s.drink}</span>`:''}`;}
-function f20Block(f){
+function f20Block(f,date){
   if(f.holiday)return `<div class="no-service"><div class="big">${f.holiday}</div>운영하지 않습니다.</div>`;
-  if(f.special)return `<div class="section"><span class="special-badge">${f.special.label}</span>${subBlock(f.special)}</div>`;
-  return `<div class="section"><div class="section-title">한식${brand(f.hansik)}</div>${subBlock(f.hansik)}</div>
-    <div class="divider"></div><div class="section"><div class="section-title">일품${brand(f.ilpum)}</div>${subBlock(f.ilpum)}</div>`;}
-function f10Block(f){
+  if(f.special)return `<div class="section"><span class="special-badge">${f.special.label}</span>${subBlock(f.special)}${rxBar(date,'f20','special')}</div>`;
+  return `<div class="section"><div class="section-title">한식${brand(f.hansik)}</div>${subBlock(f.hansik)}${rxBar(date,'f20','hansik')}</div>
+    <div class="divider"></div><div class="section"><div class="section-title">일품${brand(f.ilpum)}</div>${subBlock(f.ilpum)}${rxBar(date,'f20','ilpum')}</div>`;}
+function f10Block(f,date){
   if(!f)return `<div class="no-service"><div class="big">미운영</div>공존 카페테리아는 이 날 운영하지 않습니다.</div>`;
   if(f.holiday)return `<div class="no-service"><div class="big">${f.holiday}</div>운영하지 않습니다.</div>`;
   const lb=f.lunchbox===null?`<div class="brunch-item" style="color:var(--ink-soft)">이 날은 도시락 미운영</div>`
-    :`<div class="brunch-item">${f.lunchbox.join(' · ')}</div>`;
+    :`<div class="brunch-item">${f.lunchbox.join(' · ')}</div>${rxBar(date,'f10','lunchbox')}`;
   return `<div class="section"><div class="section-title">도시락</div>${lb}</div>
-    <div class="divider"></div><div class="section"><div class="section-title">브런치</div><div class="brunch-item">${f.brunch.join(' · ')}</div></div>
-    <div class="divider"></div><div class="section"><div class="section-title">샐러드</div><div class="salad-item">${f.salad.join(' · ')}</div></div>`;}
+    <div class="divider"></div><div class="section"><div class="section-title">브런치</div><div class="brunch-item">${f.brunch.join(' · ')}</div>${rxBar(date,'f10','brunch')}</div>
+    <div class="divider"></div><div class="section"><div class="section-title">샐러드</div><div class="salad-item">${f.salad.join(' · ')}</div>${rxBar(date,'f10','salad')}</div>`;}
 function closeWeekpick(){weekpick.classList.remove('open');weekpickList.hidden=true;
   weekpickBtn.setAttribute('aria-expanded','false');}
 function openWeekpick(){weekpick.classList.add('open');weekpickList.hidden=false;
@@ -406,12 +503,27 @@ function renderTabs(){tabsEl.innerHTML='';
 function renderPanel(){const d=WEEKS[curWeek].days[curDay];
   panelsEl.innerHTML=`<div class="cols">
     <div class="building"><div class="building-head"><h2>20층 구내식당</h2>
-      <span class="tag">${d.f20.special?d.f20.special.label:(d.f20.holiday?'휴무':'한식 · 일품')}</span></div>${f20Block(d.f20)}</div>
+      <span class="tag">${d.f20.special?d.f20.special.label:(d.f20.holiday?'휴무':'한식 · 일품')}</span></div>${f20Block(d.f20,d.date)}</div>
     <div class="building"><div class="building-head"><h2>10층 공존</h2>
-      <span class="tag">${d.f10&&d.f10.holiday?'휴무':'한정 수량'}</span></div>${f10Block(d.f10)}</div>
-  </div>`;}
+      <span class="tag">${d.f10&&d.f10.holiday?'휴무':'한정 수량'}</span></div>${f10Block(d.f10,d.date)}</div>
+  </div>`;
+  hydrateReactions();}
+panelsEl.addEventListener('click',async e=>{
+  const btn=e.target.closest('.rx');if(!btn||btn.disabled)return;
+  const bar=btn.closest('.reactions'),id=btn.dataset.emoji;
+  const st=bar._rx||{counts:{},mine:null};
+  const to=st.mine===id?null:id;
+  const next={counts:Object.assign({},st.counts),mine:to};
+  if(st.mine)next.counts[st.mine]=Math.max(0,(next.counts[st.mine]||0)-1);
+  if(to)next.counts[to]=(next.counts[to]||0)+1;
+  rxPaint(bar,next);
+  bar.querySelectorAll('.rx').forEach(b=>b.disabled=true);
+  try{await rxStore().vote(bar.dataset.rxkey,to);rxPaint(bar,next);}
+  catch(err){rxPaint(bar,st);rxNote(bar,RX_MSG.saveFail);}});
 function renderAll(){rangePill.innerHTML='기간 <b>'+WEEKS[curWeek].range+'</b>';
   renderWeekpick();renderTabs();renderPanel();}
+if(!rxShared()){const n=document.getElementById('rxModeNote');
+  n.textContent='※ '+RX_MSG.localOnly;n.hidden=false;}
 renderAll();
 </script>
 </body>
